@@ -24,7 +24,8 @@ pub fn highlight_lines(lines: &[&str], syntax: FileSyntax) -> Vec<Spans<'static>
         .find_syntax_by_name(syntax_name)
         .unwrap_or(ss.find_syntax_plain_text());
 
-    let theme = &ts.themes["base16-ocean.dark"];
+    // テーマを"base16-eighties.dark"に変更（モダンで洗練された色合いを想定）
+    let theme = &ts.themes["base16-eighties.dark"];
 
     lines
         .iter()
@@ -38,7 +39,6 @@ pub fn highlight_lines(lines: &[&str], syntax: FileSyntax) -> Vec<Spans<'static>
                     let r = style.foreground.r;
                     let g = style.foreground.g;
                     let b = style.foreground.b;
-                    // textは&strなので.to_string()で所有権を持つStringに変換
                     Span::styled(
                         text.to_string(),
                         ratatui::style::Style::default().fg(ratatui::style::Color::Rgb(r, g, b)),
