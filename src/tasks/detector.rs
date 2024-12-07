@@ -3,6 +3,7 @@ use crate::tasks::parsers::{
 };
 use std::path::Path;
 
+/// ファイルの種類を表す列挙型
 pub enum FileType {
     Makefile,
     PackageJson,
@@ -11,6 +12,7 @@ pub enum FileType {
     Unknown,
 }
 
+/// ファイルタイプを検出
 pub fn detect_file_type(file_path: &str) -> FileType {
     let path = Path::new(file_path);
     let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
@@ -28,26 +30,20 @@ pub fn detect_file_type(file_path: &str) -> FileType {
     } else {
         match ext {
             "json" => FileType::PackageJson,
-            "toml" => {
-                // tomlだけど、pyprojectやCargoじゃない場合はUnknown扱いでも可
-                // とりあえずUnknown
-                FileType::Unknown
-            }
+            "toml" => FileType::Unknown,
             _ => FileType::Unknown,
         }
     }
 }
 
+/// ファイルタイプに応じたパーサを取得
 pub fn get_parser(file_type: FileType) -> Box<dyn TasksParser> {
     match file_type {
         FileType::Makefile => Box::new(MakefileParser),
         FileType::PackageJson => Box::new(PackageJsonParser),
         FileType::PyProjectToml => Box::new(PyProjectTomlParser),
         FileType::CargoToml => Box::new(CargoTomlParser),
-        FileType::Unknown => {
-            // ダミーとしてMakefileParserを返す
-            Box::new(MakefileParser)
-        }
+        FileType::Unknown => Box::new(MakefileParser),
     }
 }
 

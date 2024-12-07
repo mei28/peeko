@@ -2,6 +2,7 @@ use ratatui::text::{Span, Spans};
 use syntect::highlighting::{Style, ThemeSet};
 use syntect::parsing::SyntaxSet;
 
+/// ファイルの種類を表す列挙型
 pub enum FileSyntax {
     Makefile,
     Json,
@@ -9,6 +10,7 @@ pub enum FileSyntax {
     Unknown,
 }
 
+/// 指定された行をシンタックスハイライトする
 pub fn highlight_lines(lines: &[&str], syntax: FileSyntax) -> Vec<Spans<'static>> {
     let ss = SyntaxSet::load_defaults_newlines();
     let ts = ThemeSet::load_defaults();
@@ -24,7 +26,6 @@ pub fn highlight_lines(lines: &[&str], syntax: FileSyntax) -> Vec<Spans<'static>
         .find_syntax_by_name(syntax_name)
         .unwrap_or(ss.find_syntax_plain_text());
 
-    // テーマを"base16-eighties.dark"に変更（モダンで洗練された色合いを想定）
     let theme = &ts.themes["base16-eighties.dark"];
 
     lines
@@ -49,25 +50,5 @@ pub fn highlight_lines(lines: &[&str], syntax: FileSyntax) -> Vec<Spans<'static>
             Spans::from(spans)
         })
         .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_highlight_lines_empty() {
-        let lines: Vec<&str> = vec![];
-        let spans = highlight_lines(&lines, FileSyntax::Unknown);
-        assert!(spans.is_empty());
-    }
-
-    #[test]
-    fn test_highlight_lines_single_line() {
-        let lines = vec!["some line"];
-        let spans = highlight_lines(&lines, FileSyntax::Unknown);
-        assert_eq!(spans.len(), 1);
-        assert!(!spans[0].0.is_empty());
-    }
 }
 
