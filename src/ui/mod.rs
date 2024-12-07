@@ -13,13 +13,15 @@ use std::io::stdout;
 use crate::app::App;
 use crate::ui::render::draw_ui;
 
-pub fn run_tui(app: &mut App) -> Result<()> {
+pub fn run_tui(app: &mut App) -> Result<Option<String>> {
     enable_raw_mode()?;
     let mut stdout = stdout();
     execute!(stdout, EnterAlternateScreen)?;
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
+
+    let mut command_to_run = None;
 
     while app.is_running() {
         terminal.draw(|f| {
@@ -38,6 +40,18 @@ pub fn run_tui(app: &mut App) -> Result<()> {
                     KeyCode::Up => {
                         app.prev_task();
                     }
+                    KeyCode::Enter => {
+                        // Enterでコマンドを取得
+                        let state = app.state();
+                        if let Some(cmd) = state
+                            .tasks
+                            .get(state.selected_index)
+                            .and_then(|t| t.command.clone())
+                        {
+                            command_to_run = Some(cmd);
+                        }
+                        app.quit();
+                    }
                     _ => {}
                 }
             }
@@ -47,13 +61,11 @@ pub fn run_tui(app: &mut App) -> Result<()> {
     disable_raw_mode()?;
     let backend = terminal.backend_mut();
     execute!(backend, LeaveAlternateScreen)?;
-    Ok(())
+    Ok(command_to_run)
 }
 
 #[cfg(test)]
 mod tests {
-    // UI直接テストは難しいので、ヘルパー関数があればここでテスト
-    // 現時点では空
     #[test]
     fn ui_dummy_test() {
         assert_eq!(1 + 1, 2);

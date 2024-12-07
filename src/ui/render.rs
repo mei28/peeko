@@ -7,7 +7,7 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph},
     Frame,
 };
-use std::path::Path; // ファイル拡張子判定用
+use std::path::Path;
 
 pub fn draw_ui<B: Backend>(f: &mut Frame<B>, state: &AppState) {
     let size = f.size();
@@ -20,7 +20,6 @@ pub fn draw_ui<B: Backend>(f: &mut Frame<B>, state: &AppState) {
     let center_line = selected_task.line_number;
     let (start_line, snippet) = get_preview_lines(&state.lines, center_line, state.preview_height);
 
-    // ファイルタイプ判定をPath経由で行う (ui内で完結したいなら以下の簡易的ロジックを使用)
     let ext = Path::new(&state.file_path)
         .extension()
         .and_then(|s| s.to_str())
@@ -32,12 +31,29 @@ pub fn draw_ui<B: Backend>(f: &mut Frame<B>, state: &AppState) {
         _ => FileSyntax::Unknown,
     };
 
-    let highlighted = highlight_lines(&snippet, file_syntax);
+    let mut highlighted = highlight_lines(&snippet, file_syntax);
 
+    // 選択行のハイライト強化
+    let selected_line_in_preview = center_line.saturating_sub(start_line);
+    if selected_line_in_preview < highlighted.len() {
+        let mut spans = highlighted[selected_line_in_preview].0.clone();
+        for span in &mut spans {
+            // 背景をCyan、前景をBlack、太字を付けて強調表示
+            span.style = span
+                .style
+                .fg(ratatui::style::Color::Black)
+                .bg(ratatui::style::Color::Cyan)
+                .add_modifier(ratatui::style::Modifier::BOLD);
+        }
+        highlighted[selected_line_in_preview] = ratatui::text::Spans::from(spans);
+    }
+
+    // プレビュー描画
     let preview_block = Block::default().title("Preview").borders(Borders::ALL);
     let preview_paragraph = Paragraph::new(highlighted).block(preview_block);
     f.render_widget(preview_paragraph, chunks[0]);
 
+    // タスクリスト描画
     let items: Vec<ListItem> = state
         .tasks
         .iter()
