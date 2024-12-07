@@ -23,6 +23,8 @@ impl App {
                 lines,
                 preview_offset: 0,
                 preview_height: 20,
+                task_offset: 0,
+                max_visible_tasks: 10, // 表示可能なタスク数
             },
             running: true,
         })
@@ -42,7 +44,7 @@ impl App {
     pub fn next_task(&mut self) {
         if self.state.selected_index + 1 < self.state.tasks.len() {
             self.state.selected_index += 1;
-            self.state.update_preview_offset();
+            self.state.update_task_offset(); // スクロールオフセットを更新
         }
     }
 
@@ -50,7 +52,8 @@ impl App {
     pub fn prev_task(&mut self) {
         if self.state.selected_index > 0 {
             self.state.selected_index -= 1;
-            self.state.update_preview_offset();
+            self.state.update_task_offset(); // スクロールオフセットを更新
         }
     }
 }
+

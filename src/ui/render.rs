@@ -173,15 +173,18 @@ pub fn draw_ui<B: Backend>(f: &mut Frame<B>, state: &AppState) {
     f.render_widget(preview_paragraph, chunks[0]);
 
     // タスクリスト
-    let items: Vec<ListItem> = state
-        .tasks
+    let start = state.task_offset;
+    let end = std::cmp::min(start + state.max_visible_tasks, state.tasks.len());
+    let visible_tasks = &state.tasks[start..end];
+
+    let items: Vec<ListItem> = visible_tasks
         .iter()
         .enumerate()
         .map(|(i, t)| {
-            let prefix = if i == state.selected_index {
+            let prefix = if i + start == state.selected_index {
                 "❯ "
             } else {
-                "· "
+                "  "
             };
             ListItem::new(format!("{}{}", prefix, t.name))
         })
@@ -232,4 +235,3 @@ mod tests {
         assert!(build_found, "build substring should be highlighted");
     }
 }
-
