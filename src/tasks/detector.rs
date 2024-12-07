@@ -4,6 +4,7 @@ use crate::tasks::parsers::{
 use std::path::Path;
 
 /// ファイルの種類を表す列挙型
+#[derive(Debug, PartialEq)]
 pub enum FileType {
     Makefile,
     PackageJson,
@@ -46,4 +47,3 @@ pub fn get_parser(file_type: FileType) -> Box<dyn TasksParser> {
         FileType::Unknown => Box::new(MakefileParser),
     }
 }
-

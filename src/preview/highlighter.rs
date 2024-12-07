@@ -3,6 +3,7 @@ use syntect::highlighting::{Style, ThemeSet};
 use syntect::parsing::SyntaxSet;
 
 /// ファイルの種類を表す列挙型
+#[derive(Debug, PartialEq)]
 pub enum FileSyntax {
     Makefile,
     Json,
@@ -51,4 +52,3 @@ pub fn highlight_lines(lines: &[&str], syntax: FileSyntax) -> Vec<Spans<'static>
         })
         .collect()
 }
-
