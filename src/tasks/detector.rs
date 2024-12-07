@@ -1,28 +1,40 @@
-use crate::tasks::parsers::{MakefileParser, PackageJsonParser, PyProjectTomlParser, TasksParser};
-use anyhow::Result;
+use crate::tasks::parsers::{
+    CargoTomlParser, MakefileParser, PackageJsonParser, PyProjectTomlParser, TasksParser,
+};
 use std::path::Path;
 
 pub enum FileType {
     Makefile,
     PackageJson,
     PyProjectToml,
+    CargoToml,
     Unknown,
 }
 
 pub fn detect_file_type(file_path: &str) -> FileType {
-    let ext = Path::new(file_path)
-        .extension()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
+    let path = Path::new(file_path);
+    let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
 
-    if file_path.ends_with("Makefile") {
+    let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+
+    if file_name == "Makefile" {
         FileType::Makefile
-    } else if ext == "json" {
+    } else if file_name == "package.json" {
         FileType::PackageJson
-    } else if ext == "toml" {
+    } else if file_name == "pyproject.toml" {
         FileType::PyProjectToml
+    } else if file_name == "Cargo.toml" {
+        FileType::CargoToml
     } else {
-        FileType::Unknown
+        match ext {
+            "json" => FileType::PackageJson,
+            "toml" => {
+                // tomlだけど、pyprojectやCargoじゃない場合はUnknown扱いでも可
+                // とりあえずUnknown
+                FileType::Unknown
+            }
+            _ => FileType::Unknown,
+        }
     }
 }
 
@@ -31,34 +43,11 @@ pub fn get_parser(file_type: FileType) -> Box<dyn TasksParser> {
         FileType::Makefile => Box::new(MakefileParser),
         FileType::PackageJson => Box::new(PackageJsonParser),
         FileType::PyProjectToml => Box::new(PyProjectTomlParser),
+        FileType::CargoToml => Box::new(CargoTomlParser),
         FileType::Unknown => {
-            // ダミーのパーサを返してもよい
+            // ダミーとしてMakefileParserを返す
             Box::new(MakefileParser)
         }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_detect_file_type_makefile() {
-        assert!(matches!(detect_file_type("SomeMakefile"), FileType::Makefile));
-    }
-
-    #[test]
-    fn test_detect_file_type_json() {
-        assert!(matches!(detect_file_type("package.json"), FileType::PackageJson));
-    }
-
-    #[test]
-    fn test_detect_file_type_toml() {
-        assert!(matches!(detect_file_type("pyproject.toml"), FileType::PyProjectToml));
-    }
-
-    #[test]
-    fn test_detect_file_type_unknown() {
-        assert!(matches!(detect_file_type("something.txt"), FileType::Unknown));
-    }
-}

@@ -1,42 +1,39 @@
+// src/tasks/parsers/pyproject_toml_parser.rs
 use super::TasksParser;
 use crate::tasks::task::Task;
 use anyhow::Result;
-use serde::Deserialize;
-use std::collections::HashMap;
 use std::fs;
+use toml::Value;
 
 pub struct PyProjectTomlParser;
-
-#[derive(Deserialize, Default)]
-struct PyProject {
-    #[serde(default)]
-    tool: Tool,
-}
-
-#[derive(Deserialize, Default)]
-struct Tool {
-    #[serde(default)]
-    poetry: Poetry,
-}
-
-#[derive(Deserialize, Default)]
-struct Poetry {
-    #[serde(default)]
-    scripts: HashMap<String, String>,
-}
 
 impl TasksParser for PyProjectTomlParser {
     fn parse(&self, file_path: &str) -> Result<Vec<Task>> {
         let content = fs::read_to_string(file_path)?;
-        let pyproject: PyProject = toml::from_str(&content)?;
+        let value: Value = toml::from_str(&content)?;
         let mut tasks = Vec::new();
 
-        for (name, cmd) in pyproject.tool.poetry.scripts {
-            tasks.push(Task {
-                name,
-                line_number: 0,
-                command: Some(cmd),
-            });
+        // [tool.*.scripts] を探索
+        // value["tool"]がテーブルなら、その中の各キー（poetry, uv, etc.）を走査
+        if let Some(tool_table) = value.get("tool").and_then(|v| v.as_table()) {
+            for (_tool_name, subtool_val) in tool_table.iter() {
+                if let Some(subtool_table) = subtool_val.as_table() {
+                    // scriptsキーがある場合
+                    if let Some(scripts_val) = subtool_table.get("scripts") {
+                        if let Some(scripts_table) = scripts_val.as_table() {
+                            for (script_name, cmd_val) in scripts_table.iter() {
+                                if let Some(cmd_str) = cmd_val.as_str() {
+                                    tasks.push(Task {
+                                        name: script_name.to_string(),
+                                        line_number: 0,
+                                        command: Some(cmd_str.to_string()),
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         if tasks.is_empty() {
@@ -54,11 +51,12 @@ impl TasksParser for PyProjectTomlParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
     use std::io::Write;
     use tempfile::NamedTempFile;
 
     #[test]
-    fn test_pyproject_toml_parser_with_scripts() -> Result<()> {
+    fn test_pyproject_toml_parser_with_poetry_scripts() -> Result<()> {
         let mut file = NamedTempFile::new()?;
         writeln!(
             file,
@@ -77,11 +75,34 @@ test = "example:test_main"
         let tasks = parser.parse(file.path().to_str().unwrap())?;
         assert_eq!(tasks.len(), 2);
 
-        assert_eq!(tasks.len(), 2);
-
         let mut task_names: Vec<_> = tasks.iter().map(|t| &t.name).collect();
         task_names.sort();
         assert_eq!(task_names, vec!["build", "test"]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_pyproject_toml_parser_with_uv_scripts() -> Result<()> {
+        let mut file = NamedTempFile::new()?;
+        writeln!(
+            file,
+            r#"
+[tool.uv]
+name = "example-uv"
+
+[tool.uv.scripts]
+serve = "uvicorn app:main"
+test = "pytest tests"
+"#
+        )?;
+
+        let parser = PyProjectTomlParser;
+        let tasks = parser.parse(file.path().to_str().unwrap())?;
+        assert_eq!(tasks.len(), 2);
+
+        let mut names: Vec<_> = tasks.iter().map(|t| &t.name).collect();
+        names.sort();
+        assert_eq!(names, vec!["serve", "test"]);
         Ok(())
     }
 
@@ -99,9 +120,9 @@ version = "0.1.0"
 
         let parser = PyProjectTomlParser;
         let tasks = parser.parse(file.path().to_str().unwrap())?;
-        // ダミーが返るはず
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].name, "build");
         Ok(())
     }
 }
+

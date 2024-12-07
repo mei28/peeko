@@ -24,7 +24,6 @@ impl TasksParser for MakefileParser {
             }
         }
         if tasks.is_empty() {
-            // ダミー追加
             tasks.push(Task {
                 name: "build".into(),
                 line_number: 10,
@@ -34,3 +33,37 @@ impl TasksParser for MakefileParser {
         Ok(tasks)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_makefile_parser_with_targets() -> Result<()> {
+        let mut file = NamedTempFile::new()?;
+        writeln!(file, "build:\n\t@echo building")?;
+        writeln!(file, "test:\n\t@echo testing")?;
+
+        let parser = MakefileParser;
+        let tasks = parser.parse(file.path().to_str().unwrap())?;
+        assert_eq!(tasks.len(), 2);
+        let names: Vec<_> = tasks.iter().map(|t| &t.name).collect();
+        assert!(names.contains(&&"build".to_string()));
+        assert!(names.contains(&&"test".to_string()));
+        Ok(())
+    }
+
+    #[test]
+    fn test_makefile_parser_empty() -> Result<()> {
+        let file = NamedTempFile::new()?;
+        // 空のMakefile
+        let parser = MakefileParser;
+        let tasks = parser.parse(file.path().to_str().unwrap())?;
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].name, "build");
+        Ok(())
+    }
+}
+

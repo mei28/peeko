@@ -8,8 +8,10 @@ pub trait TasksParser {
 mod makefile_parser;
 mod package_json_parser;
 mod pyproject_toml_parser;
+mod cargo_toml_parser;
 
 pub use makefile_parser::MakefileParser;
 pub use package_json_parser::PackageJsonParser;
 pub use pyproject_toml_parser::PyProjectTomlParser;
+pub use cargo_toml_parser::CargoTomlParser;
 

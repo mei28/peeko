@@ -18,9 +18,7 @@ impl TasksParser for PackageJsonParser {
         let package: PackageJson = serde_json::from_str(&content)?;
         let mut tasks = Vec::new();
         if let Some(scripts) = package.scripts {
-            // scriptsのキーをタスク名、値をコマンドとする
             for (name, cmd) in scripts {
-                // 行番号は不明なため0で仮指定
                 tasks.push(Task {
                     name,
                     line_number: 0,
@@ -30,7 +28,6 @@ impl TasksParser for PackageJsonParser {
         }
 
         if tasks.is_empty() {
-            // スクリプトがなければダミー
             tasks.push(Task {
                 name: "build".into(),
                 line_number: 10,
@@ -60,8 +57,6 @@ mod tests {
         let tasks = parser.parse(file.path().to_str().unwrap())?;
         assert_eq!(tasks.len(), 2);
 
-        assert_eq!(tasks.len(), 2);
-
         let mut task_names: Vec<_> = tasks.iter().map(|t| &t.name).collect();
         task_names.sort();
         assert_eq!(task_names, vec!["build", "test"]);
@@ -71,13 +66,24 @@ mod tests {
     #[test]
     fn test_package_json_parser_empty_scripts() -> Result<()> {
         let mut file = NamedTempFile::new()?;
-        writeln!(file, "{{}}")?; // {}をエスケープする方法
-
+        writeln!(file, "{{}}")?; // 空のscripts
         let parser = PackageJsonParser;
         let tasks = parser.parse(file.path().to_str().unwrap())?;
-        // ダミーが返るはず
         assert_eq!(tasks.len(), 1);
         assert_eq!(tasks[0].name, "build");
         Ok(())
     }
+
+    #[test]
+    fn test_package_json_parser_single_script() -> Result<()> {
+        let mut file = NamedTempFile::new()?;
+        writeln!(file, r#"{{ "scripts": {{ "dev": "echo dev" }} }}"#)?;
+        let parser = PackageJsonParser;
+        let tasks = parser.parse(file.path().to_str().unwrap())?;
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].name, "dev");
+        assert_eq!(tasks[0].command.as_deref(), Some("echo dev"));
+        Ok(())
+    }
 }
+
