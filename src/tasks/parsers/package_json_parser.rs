@@ -59,8 +59,12 @@ mod tests {
         let parser = PackageJsonParser;
         let tasks = parser.parse(file.path().to_str().unwrap())?;
         assert_eq!(tasks.len(), 2);
-        assert_eq!(tasks[0].name, "build");
-        assert_eq!(tasks[1].name, "test");
+
+        assert_eq!(tasks.len(), 2);
+
+        let mut task_names: Vec<_> = tasks.iter().map(|t| &t.name).collect();
+        task_names.sort();
+        assert_eq!(task_names, vec!["build", "test"]);
         Ok(())
     }
 

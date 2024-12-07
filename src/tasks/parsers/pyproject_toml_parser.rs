@@ -1,9 +1,9 @@
 use super::TasksParser;
 use crate::tasks::task::Task;
 use anyhow::Result;
-use std::fs;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::fs;
 
 pub struct PyProjectTomlParser;
 
@@ -60,7 +60,9 @@ mod tests {
     #[test]
     fn test_pyproject_toml_parser_with_scripts() -> Result<()> {
         let mut file = NamedTempFile::new()?;
-        writeln!(file, r#"
+        writeln!(
+            file,
+            r#"
 [tool.poetry]
 name = "example"
 version = "0.1.0"
@@ -68,24 +70,32 @@ version = "0.1.0"
 [tool.poetry.scripts]
 build = "example:build_main"
 test = "example:test_main"
-"#)?;
+"#
+        )?;
 
         let parser = PyProjectTomlParser;
         let tasks = parser.parse(file.path().to_str().unwrap())?;
         assert_eq!(tasks.len(), 2);
-        assert_eq!(tasks[0].name, "build");
-        assert_eq!(tasks[1].name, "test");
+
+        assert_eq!(tasks.len(), 2);
+
+        let mut task_names: Vec<_> = tasks.iter().map(|t| &t.name).collect();
+        task_names.sort();
+        assert_eq!(task_names, vec!["build", "test"]);
         Ok(())
     }
 
     #[test]
     fn test_pyproject_toml_parser_empty_scripts() -> Result<()> {
         let mut file = NamedTempFile::new()?;
-        writeln!(file, r#"
+        writeln!(
+            file,
+            r#"
 [tool.poetry]
 name = "empty"
 version = "0.1.0"
-"#)?;
+"#
+        )?;
 
         let parser = PyProjectTomlParser;
         let tasks = parser.parse(file.path().to_str().unwrap())?;
