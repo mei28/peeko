@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "build": "echo Building",
+    "test": "echo Testing",
+    "start": "echo Starting"
+  }
+}

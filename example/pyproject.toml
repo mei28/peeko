@@ -1,0 +1,7 @@
+[tool.uv]
+name = "example_project"
+version = "0.1.0"
+
+[tool.uv.scripts]
+build = "example:build_main"
+test = "example:test_main"

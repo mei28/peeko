@@ -8,12 +8,19 @@ pub struct Task {
 mod tests {
     use super::*;
 
+    impl Task {
+        // テスト用メソッド例
+        pub fn is_build_task(&self) -> bool {
+            self.name.contains("build")
+        }
+    }
+
     #[test]
     fn test_task_creation() {
         let t = Task {
-            name: "build".to_string(),
+            name: "build".into(),
             line_number: 42,
-            command: Some("make build".to_string()),
+            command: Some("make build".into()),
         };
         assert_eq!(t.name, "build");
         assert_eq!(t.line_number, 42);
@@ -23,11 +30,11 @@ mod tests {
     #[test]
     fn test_is_build_task() {
         let t = Task {
-            name: "build-test".to_string(),
+            name: "build-test".into(),
             line_number: 10,
             command: None,
         };
-        // 仮にis_build_taskがあると想定
-        // assert!(t.is_build_task());
+        assert!(t.is_build_task());
     }
 }
+
